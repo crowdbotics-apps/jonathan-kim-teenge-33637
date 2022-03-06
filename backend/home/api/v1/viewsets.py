@@ -1,4 +1,5 @@
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -41,8 +42,19 @@ class AccountViewSet(ModelViewSet):
     queryset = User.objects.all()
 
 class WishViewSet(ModelViewSet):
-    serializer_class = WishSerializer
+    permission_classes = [IsAuthenticated]
     queryset = Wish.objects.all()
+    serializer_class = WishSerializer
+
+    def create(self, request, *args, **kwargs):
+        try:
+            if not request.data._mutable:
+                request.data._mutable = True
+        except:
+            pass
+        request.data['user'] = request.user.pk
+        response = super().create(request, *args, **kwargs)
+        return response
 
 class NotificationViewSet(ModelViewSet):
     serializer_class = NotificationSerializer
