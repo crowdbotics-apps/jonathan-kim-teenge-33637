@@ -38,6 +38,7 @@ class LoginViewSet(ViewSet):
         return Response({"token": token.key, "user": user_serializer.data})
 
 class AccountViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
     serializer_class = AccountSerializer
     queryset = User.objects.all()
 
@@ -57,10 +58,12 @@ class WishViewSet(ModelViewSet):
         return response
 
 class NotificationViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
     queryset = Notification.objects.all()
 
 class CourseViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
 
