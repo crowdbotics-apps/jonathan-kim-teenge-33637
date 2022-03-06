@@ -5,11 +5,14 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-GENDER_CATEGORY = (
-    ('U','Undefined'),
-    ('F','Female'),
-    ('M','Male')
-                    )
+MALE = 'male'
+FEMALE = 'female'
+UNDEFINED = 'undefined'
+GENDER_OPTIONS = [
+    (MALE, 'Male'),
+    (FEMALE, 'Female'),
+    (UNDEFINED, 'Undefined')
+]
 
 class User(AbstractUser):
     # WARNING!
@@ -32,7 +35,7 @@ class User(AbstractUser):
     email = models.CharField(_("Email"), blank=True, null=True, max_length=255)
     phone_number = models.CharField(_("Phone number"), blank=True, null=True, max_length=255)
     dob = models.DateField(_('Date of birth'), default=timezone.now)
-    gender = models.CharField(_("Gender"), blank=True, null=True, max_length=255, choices=GENDER_CATEGORY)
+    gender = models.CharField(_("Gender"), blank=True, null=True, max_length=255, choices=GENDER_OPTIONS)
     address = models.CharField(_("Address"), blank=True, null=True, max_length=255)
     city = models.CharField(_("City"), blank=True, null=True, max_length=255)
     zip_code = models.CharField(_("Zip Code"), max_length=150, null=True, blank=True)
