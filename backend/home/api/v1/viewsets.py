@@ -5,8 +5,10 @@ from rest_framework.response import Response
 
 from home.api.v1.serializers import (
     SignupSerializer,
-    UserSerializer,
+    UserSerializer, AccountSerializer, WishSerializer
 )
+from home.wish import Wish
+from users.models import User
 
 
 class SignupViewSet(ModelViewSet):
@@ -28,3 +30,12 @@ class LoginViewSet(ViewSet):
         token, created = Token.objects.get_or_create(user=user)
         user_serializer = UserSerializer(user)
         return Response({"token": token.key, "user": user_serializer.data})
+
+class AccountViewSet(ModelViewSet):
+    serializer_class = AccountSerializer
+    queryset = User.objects.all()
+
+class WishViewSet(ModelViewSet):
+    serializer_class = WishSerializer
+    queryset = Wish.objects.all()
+
