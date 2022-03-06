@@ -10,6 +10,8 @@ from rest_framework import serializers
 from rest_auth.serializers import PasswordResetSerializer
 
 from home.wish import Wish
+from home.notifications import Notification
+from home.courses import  Course
 
 User = get_user_model()
 
@@ -84,5 +86,15 @@ class AccountSerializer(serializers.ModelSerializer):
 class WishSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wish
+        fields = '__all__'
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+class CourseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Course
         fields = '__all__'
 

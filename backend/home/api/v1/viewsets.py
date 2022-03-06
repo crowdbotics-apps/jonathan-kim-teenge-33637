@@ -5,11 +5,16 @@ from rest_framework.response import Response
 
 from home.api.v1.serializers import (
     SignupSerializer,
-    UserSerializer, AccountSerializer, WishSerializer
+    UserSerializer,
+    AccountSerializer,
+    WishSerializer,
+    NotificationSerializer,
+    CourseSerializer
 )
 from home.wish import Wish
 from users.models import User
-
+from home.notifications import Notification
+from home.courses import Course
 
 class SignupViewSet(ModelViewSet):
     serializer_class = SignupSerializer
@@ -38,4 +43,14 @@ class AccountViewSet(ModelViewSet):
 class WishViewSet(ModelViewSet):
     serializer_class = WishSerializer
     queryset = Wish.objects.all()
+
+class NotificationViewSet(ModelViewSet):
+    serializer_class = NotificationSerializer
+    queryset = Notification.objects.all()
+
+class CourseViewSet(ModelViewSet):
+    serializer_class = CourseSerializer
+    queryset = Course.objects.all()
+
+
 
