@@ -9,13 +9,11 @@ from home.api.v1.serializers import (
     UserSerializer,
     AccountSerializer,
     WishSerializer,
-    NotificationSerializer,
+    AlertSerializer,
     CourseSerializer
 )
-from home.wish import Wish
+from home.models import Alert, Course, Wish
 from users.models import User
-from home.notifications import Notification
-from home.courses import Course
 
 class SignupViewSet(ModelViewSet):
     serializer_class = SignupSerializer
@@ -47,20 +45,25 @@ class WishViewSet(ModelViewSet):
     queryset = Wish.objects.all()
     serializer_class = WishSerializer
 
-    def create(self, request, *args, **kwargs):
-        try:
-            if not request.data._mutable:
-                request.data._mutable = True
-        except:
-            pass
-        request.data['user'] = request.user.pk
-        response = super().create(request, *args, **kwargs)
-        return response
+    # def create(self, request, *args, **kwargs):
+    #     try:
+    #         if not request.data._mutable:
+    #             request.data._mutable = True
+    #     except:
+    #         pass
+    #     request.data['user'] = request.user.pk
+    #     response = super().create(request, *args, **kwargs)
+    #     return response
 
-class NotificationViewSet(ModelViewSet):
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class AlertViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
-    serializer_class = NotificationSerializer
-    queryset = Notification.objects.all()
+    serializer_class = AlertSerializer
+    queryset = Alert.objects.all()
+
 
 class CourseViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -68,4 +71,6 @@ class CourseViewSet(ModelViewSet):
     queryset = Course.objects.all()
 
 
+
+# TODO: save wish-> save wish+ get course+dump course in notification table
 

@@ -9,9 +9,7 @@ from allauth.account.utils import setup_user_email
 from rest_framework import serializers
 from rest_auth.serializers import PasswordResetSerializer
 
-from home.wish import Wish
-from home.notifications import Notification
-from home.courses import  Course
+from home.models import Alert, Course, Wish
 
 User = get_user_model()
 
@@ -87,10 +85,11 @@ class WishSerializer(serializers.ModelSerializer):
     class Meta:
         model = Wish
         fields = '__all__'
+        read_only_fields = ['user']
 
-class NotificationSerializer(serializers.ModelSerializer):
+class AlertSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Notification
+        model = Alert
         fields = '__all__'
 
 class CourseSerializer(serializers.ModelSerializer):

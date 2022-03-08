@@ -6,7 +6,7 @@ from home.api.v1.viewsets import (
     LoginViewSet,
     AccountViewSet,
     WishViewSet,
-    NotificationViewSet,
+    AlertViewSet,
     CourseViewSet
 )
 
@@ -15,7 +15,7 @@ router.register("signup", SignupViewSet, basename="signup")
 router.register("login", LoginViewSet, basename="login")
 router.register("accounts", AccountViewSet, basename="accounts")
 router.register("wishes", WishViewSet, basename="wishes")
-router.register("notifications", NotificationViewSet, basename="notifications")
+router.register("alerts", AlertViewSet, basename="alerts")
 router.register("courses", CourseViewSet, basename="courses")
 
 urlpatterns = [
