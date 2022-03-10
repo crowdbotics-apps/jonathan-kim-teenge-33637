@@ -44,7 +44,8 @@ class User(AbstractUser):
     profile_picture = models.ImageField(upload_to='user_profile_pictures', blank=True, null=True)
 
     def get_absolute_url(self):
-        return reverse("users:detail", kwargs={"name": self.name})
+        return reverse("users:detail", kwargs={"username": self.username})
+
     #
     # def save(self, *args, **kwargs):
     #     self.is_staff = False if self.parent else True

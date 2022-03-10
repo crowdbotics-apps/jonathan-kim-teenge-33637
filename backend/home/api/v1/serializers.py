@@ -76,10 +76,13 @@ class PasswordSerializer(PasswordResetSerializer):
     """Custom serializer for rest_auth to solve reset password error"""
     password_reset_form_class = ResetPasswordForm
 
+
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'email', 'name', 'phone_number', 'dob', 'gender', 'address', 'city', 'zip_code', 'state', 'country']
+        fields = ['id', 'email', 'name', 'phone_number', 'dob', 'gender', 'address', 'city', 'zip_code', 'state',
+                  'country']
+
 
 class WishSerializer(serializers.ModelSerializer):
     class Meta:
@@ -87,13 +90,24 @@ class WishSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['user']
 
+
 class AlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = Alert
         fields = '__all__'
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if 'request' in self.context.keys() and self.context['request'].method.lower() == 'get':
+            wish = Wish.objects.get(id=instance.wish.id)
+            data['wish'] = WishSerializer(wish).data
+            course = Course.objects.get(id=instance.course.id)
+            data['course'] = CourseSerializer(course).data
+
+        return data
+
+
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = '__all__'
-
