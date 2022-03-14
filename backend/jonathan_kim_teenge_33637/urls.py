@@ -49,7 +49,7 @@ api_info = openapi.Info(
 schema_view = get_schema_view(
     api_info,
     public=True,
-    permission_classes=(permissions.IsAuthenticated,),
+    # permission_classes=(permissions.IsAuthenticated,),
 )
 
 urlpatterns += [
