@@ -7,7 +7,8 @@ from home.api.v1.viewsets import (
     AccountViewSet,
     WishViewSet,
     AlertViewSet,
-    CourseViewSet
+    CourseViewSet,
+    SettingViewSet
 )
 
 router = DefaultRouter()
@@ -17,6 +18,7 @@ router.register("accounts", AccountViewSet, basename="accounts")
 router.register("wishes", WishViewSet, basename="wishes")
 router.register("alerts", AlertViewSet, basename="alerts")
 router.register("courses", CourseViewSet, basename="courses")
+router.register("settings", SettingViewSet, basename="settings")
 
 urlpatterns = [
     path("", include(router.urls)),

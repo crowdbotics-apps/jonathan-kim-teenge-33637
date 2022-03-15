@@ -40,3 +40,11 @@ class Alert(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
 
     is_read = models.BooleanField(default=False)
+
+
+class Setting(BaseModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
+
+    is_notifications_enabled = models.BooleanField(default=False)
+    is_sms_enabled = models.BooleanField(default=False)
+    is_deactivated = models.BooleanField(default=False)

@@ -9,7 +9,7 @@ from allauth.account.utils import setup_user_email
 from rest_framework import serializers
 from rest_auth.serializers import PasswordResetSerializer
 
-from home.models import Alert, Course, Wish
+from home.models import Alert, Course, Wish, Setting
 
 User = get_user_model()
 
@@ -110,4 +110,9 @@ class AlertSerializer(serializers.ModelSerializer):
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
+        fields = '__all__'
+
+class SettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Setting
         fields = '__all__'

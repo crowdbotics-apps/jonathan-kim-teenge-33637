@@ -11,9 +11,10 @@ from home.api.v1.serializers import (
     AccountSerializer,
     WishSerializer,
     AlertSerializer,
-    CourseSerializer
+    CourseSerializer,
+    SettingSerializer
 )
-from home.models import Alert, Course, Wish
+from home.models import Alert, Course, Wish, Setting
 from users.models import User
 
 class SignupViewSet(ModelViewSet):
@@ -34,17 +35,22 @@ class LoginViewSet(ViewSet):
         user = serializer.validated_data["user"]
         token, created = Token.objects.get_or_create(user=user)
         user_serializer = UserSerializer(user)
+
+        setting = Setting.objects.filter(user__setting = user.id).first()
+        if setting.is_deactivated:
+            raise serializers.ValidationError(
+                _("Account is deactivated"))
+
         return Response({"token": token.key, "user": user_serializer.data})
 
 class AccountViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = AccountSerializer
     queryset = User.objects.all()
-    # http_method_names = ['patch']
+    http_method_names = ['patch']
 
     def partial_update(self, request, *args, **kwargs):
         user = self.queryset.get(pk=self.request.user.pk)
-        user.username = "dummy"
         if user.username != request.user.username:
             raise serializers.ValidationError(
                 _("Cannot update other user's data"))
@@ -100,7 +106,13 @@ class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
 
+class SettingViewSet(ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = SettingSerializer
+    queryset = Setting.objects.all()
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 # TODO: save wish-> save wish+ get course+dump course in notification table
 
