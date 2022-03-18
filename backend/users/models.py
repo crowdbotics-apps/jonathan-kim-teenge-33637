@@ -71,8 +71,6 @@ class User(AbstractUser):
             self.stripe_customer_id = customer.id
         super(User, self).save()
 
-
-
     #
     # def save(self, *args, **kwargs):
     #     self.is_staff = False if self.parent else True
@@ -85,3 +83,11 @@ class User(AbstractUser):
     # @property
     # def is_admin(self):
     #     return self.role == User.ADMIN and not self.parent
+
+class Subscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
+
+    name = models.CharField(_("Name"), blank=True, null=True, max_length=255)
+    price = models.CharField(_("Price"), blank=True, null=True, max_length=255)
+    number_of_alerts = models.CharField(_("Number of Alerts"), blank=True, null=True, max_length=255)
+    is_active = models.BooleanField(default=False)

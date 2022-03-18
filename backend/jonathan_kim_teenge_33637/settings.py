@@ -216,6 +216,7 @@ REST_FRAMEWORK = {
 # Custom user model
 AUTH_USER_MODEL = "users.User"
 
+SENDGRID_API_KEY= env.str("SENDGRID_API_KEY", "")
 EMAIL_HOST = env.str("EMAIL_HOST", "smtp.sendgrid.net")
 EMAIL_HOST_USER = env.str("SENDGRID_USERNAME", "")
 EMAIL_HOST_PASSWORD = env.str("SENDGRID_PASSWORD", "")

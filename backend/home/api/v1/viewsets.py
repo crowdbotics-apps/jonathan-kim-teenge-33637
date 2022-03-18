@@ -10,6 +10,8 @@ from rest_framework import status
 from rest_framework.decorators import action
 from stripe.error import CardError
 from django.utils.translation import ugettext_lazy as _
+import sendgrid
+import os
 
 stripe.api_key = settings.STRIPE_LIVE_SECRET_KEY if settings.STRIPE_LIVE_MODE else settings.STRIPE_SECRET_KEY
 # stripe.api_key = "sk_test_9lLAbsWDtg9r5B17jYWGaJsb002b4FqMAZ"
@@ -94,6 +96,34 @@ class WishViewSet(ModelViewSet):
                 # send push notification
                 # if notification: then insert
                 Alert.objects.create(user=self.request.user, wish=wish, course=course, is_read=False)
+
+                # SendGrid Integration
+                sg = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+                data = {
+                    "personalizations": [
+                        {
+                            "to": [
+                                {
+                                    "email": self.request.user.email
+                                }
+                            ],
+                            "subject": "Golf Course Notification"
+                        }
+                    ],
+                    "from": {
+                        "email": settings.EMAIL_HOST_USER
+                    },
+                    "content": [
+                        {
+                            "type": "An alert has been added in your application against your wish. Please check your application.",
+                            "value": "and easy to do anywhere, even with Python"
+                        }
+                    ]
+                }
+                response = sg.client.mail.send.post(request_body=data)
+                print(response.status_code)
+                print(response.body)
+                print(response.headers)
 
         return resp
 
