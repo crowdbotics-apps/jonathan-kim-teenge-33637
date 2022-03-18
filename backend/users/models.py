@@ -1,9 +1,14 @@
 import datetime
+
+import stripe
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from jonathan_kim_teenge_33637 import settings
+
+stripe.api_key = settings.STRIPE_LIVE_SECRET_KEY if settings.STRIPE_LIVE_MODE else settings.STRIPE_SECRET_KEY
 
 MALE = 'male'
 FEMALE = 'female'
@@ -42,9 +47,31 @@ class User(AbstractUser):
     state = models.CharField(_("State"), blank=True, null=True, max_length=255)
     country = models.CharField(_("Country"), blank=True, null=True, max_length=255)
     profile_picture = models.ImageField(upload_to='user_profile_pictures', blank=True, null=True)
+    stripe_customer_id = models.CharField(max_length=150, null=True, blank=True)
+    is_subscribe = models.BooleanField(default=False)
+    subscription_using_payment = models.BooleanField(default=False)
+    subscription_using_code = models.BooleanField(default=False)
 
+    is_premium = models.BooleanField(default=False)
+    is_flaged = models.BooleanField(default=False)
+
+# card token
+#
+# create card
     def get_absolute_url(self):
         return reverse("users:detail", kwargs={"username": self.username})
+
+    def save(self, *args, **kwargs):
+        # Stripe Account Creation Of Customer
+        if not self.stripe_customer_id:
+            customer = stripe.Customer.create(
+                description="Customer for {}".format(self.email),
+                email=self.email
+            )
+            self.stripe_customer_id = customer.id
+        super(User, self).save()
+
+
 
     #
     # def save(self, *args, **kwargs):

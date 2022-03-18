@@ -4,6 +4,15 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
 from rest_auth import serializers
+import stripe
+from django.conf import settings
+from rest_framework import status
+from rest_framework.decorators import action
+from stripe.error import CardError
+from django.utils.translation import ugettext_lazy as _
+
+stripe.api_key = settings.STRIPE_LIVE_SECRET_KEY if settings.STRIPE_LIVE_MODE else settings.STRIPE_SECRET_KEY
+# stripe.api_key = "sk_test_9lLAbsWDtg9r5B17jYWGaJsb002b4FqMAZ"
 
 from home.api.v1.serializers import (
     SignupSerializer,
@@ -36,8 +45,8 @@ class LoginViewSet(ViewSet):
         token, created = Token.objects.get_or_create(user=user)
         user_serializer = UserSerializer(user)
 
-        setting = Setting.objects.filter(user__setting = user.id).first()
-        if setting.is_deactivated:
+        setting = Setting.objects.filter(user = user).first()
+        if setting and setting.is_deactivated:
             raise serializers.ValidationError(
                 _("Account is deactivated"))
 
@@ -113,6 +122,160 @@ class SettingViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class PaymentViewSet(ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def subscribe(self, request):
+        try:
+            user = self.request.user
+            email = user.email
+            payment_method_id = request.data['payment_method_id']
+            customer_data = stripe.Customer.list(email=email).data
+            # if the array is empty it means the email has not been used yet
+            if len(customer_data) == 0:
+                # creating customer
+                customer = stripe.Customer.create(email=email, payment_method=payment_method_id,
+                                                  invoice_settings={'default_payment_method': payment_method_id})
+            else:
+                customer = customer_data[0]
+
+            # Create PaymentIntent — charge the customer with a one-time fee
+            stripe.PaymentIntent.create(
+                customer=customer,
+                payment_method=payment_method_id,
+                currency='usd',  # you can provide any currency you want
+                amount=6.98,
+                confirm=True
+            )
+
+            stripe.Subscription.create(
+                customer=customer,
+                items=[{
+                    'price': 'price_1JSoiFGRbb2vDACC2Fa23PAQ'  # here paste your price id
+                }]
+            )
+            user.is_subscribe = True
+            user.subscription_using_payment = True
+            user.subscription_using_code = False
+            user.save()
+            return Response(status=status.HTTP_201_CREATED)
+        except CardError as e:
+            return Response(data=e.error, status=e.http_status)
+
+    def create_customer_id(self, request):
+        customer = stripe.Customer.create(
+            description="Customer for {}".format(request.user.email),
+            email=request.user.email
+        )
+        request.user.stripe_customer_id = customer.id
+        request.user.save()
+
+    @action(detail=False, methods=['get'])
+    def get_customer_id(self, request):
+        if not request.user.stripe_customer_id:
+            customer = stripe.Customer.create(
+                description="Customer for {}".format(request.user.email),
+                email=request.user.email
+            )
+            request.user.stripe_customer_id = customer.id
+            request.user.save()
+        return Response({"customer_id": request.user.stripe_customer_id})
+
+    @action(detail=False, methods=['get'])
+    def get_cards(self, request):
+        if request.user.stripe_customer_id:
+            cards = stripe.Customer.list_sources(
+                request.user.stripe_customer_id,
+                object="card",
+            )
+            customer = stripe.Customer.retrieve(request.user.stripe_customer_id)
+            # return Response(cards)
+            return Response({
+                "cards": cards.data,
+                "default_card": customer.default_source
+            })
+        return Response("User not a customer", status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'])
+    def create_card(self, request):
+        try:
+            if not request.user.stripe_customer_id:
+                self.create_customer_id(request)
+            if request.user.stripe_customer_id:
+                card = stripe.Customer.create_source(
+                    request.user.stripe_customer_id,
+                    source=request.data['card_token'],
+                )
+                default_card = request.data.get('default_card', False)
+                if default_card:
+                    stripe.Customer.modify(request.user.stripe_customer_id,
+                                           default_source=card.id)
+
+                return Response(card)
+        # return Response("User not a customer", status=status.HTTP_400_BAD_REQUEST)
+        except CardError as e:
+            return Response(data=e.error, status=e.http_status)
+        # except Exception as e:
+        #     return Response(data={
+        #         "error" : str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=False, methods=['post'])
+    def set_default_card(self, request):
+        try:
+            if request.user.stripe_customer_id:
+                # default_card = request.data.get('default_card', False)
+                # if default_card:
+                stripe.Customer.modify(request.user.stripe_customer_id, source=request.data['card_token'])
+                return Response()
+            return Response("User not a customer", status=status.HTTP_400_BAD_REQUEST)
+        except CardError as e:
+            return Response(data=e.error, status=e.http_status)
+
+    @action(detail=False, methods=['post'])
+    def update_card(self, request):
+        data = {}
+        if 'address_city' in request.data:
+            data['address_city'] = request.data['address_city']
+        if 'address_country' in request.data:
+            data['address_country'] = request.data['address_country']
+        if 'address_line1' in request.data:
+            data['address_line1'] = request.data['address_line1']
+        if 'address_line2' in request.data:
+            data['address_line2'] = request.data['address_line2']
+        if 'address_state' in request.data:
+            data['address_state'] = request.data['address_state']
+        if 'address_zip' in request.data:
+            data['address_zip'] = request.data['address_zip']
+        if 'exp_month' in request.data:
+            data['exp_month'] = request.data['exp_month']
+        if 'exp_year' in request.data:
+            data['exp_year'] = request.data['exp_year']
+        if 'name' in request.data:
+            data['name'] = request.data['name']
+        if request.user.stripe_customer_id:
+            card = stripe.Customer.modify_source(
+                request.user.stripe_customer_id,
+                request.data['card_id'],
+                **data
+            )
+            default_card = request.data.get('default_card', False)
+            if default_card:
+                stripe.Customer.modify(request.user.stripe_customer_id,
+                                       default_source=request.data['card_id'])
+            return Response(card)
+        return Response("User not a customer", status=status.HTTP_400_BAD_REQUEST)
+
+        @action(detail=False, methods=['post'])
+        def delete_card(self, request):
+            if request.user.stripe_customer_id:
+                response = stripe.Customer.delete_source(
+                    request.user.stripe_customer_id,
+                    request.data['card_id']
+                )
+                return Response(response)
+            return Response("User not a customer", status=status.HTTP_400_BAD_REQUEST)
 
 # TODO: save wish-> save wish+ get course+dump course in notification table
 

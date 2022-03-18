@@ -248,6 +248,17 @@ if USE_S3:
     MEDIA_URL = '/mediafiles/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'mediafiles')
 
+
+STRIPE_LIVE_PUBLIC_KEY = env.str('STRIPE_LIVE_PUBLIC_KEY', '')
+STRIPE_LIVE_SECRET_KEY = env.str('STRIPE_LIVE_SECRET_KEY', '')
+STRIPE_PUBLIC_KEY = env.str('STRIPE_TEST_PUBLIC_KEY',
+                                 'pk_test_51J3oNGDttycmWBgSfFT3Bf1oaZYwS3Aype4CY0tYdRJPxELn3b9NcFVb7X1o5r9CUwDjKqXHcMLLQ6rwtwl3IzaQ00NBwCviyc')
+STRIPE_SECRET_KEY = env.str('STRIPE_TEST_SECRET_KEY',
+                                 'sk_test_51J3oNGDttycmWBgSZ9UZ0ynMtlZQcazFFh8wUV9maptuLLZlGF0K6d4LG4xx8eksbpNd91IJaqIlEXAv94tVtfhY007lXWuqTE')
+STRIPE_LIVE_MODE = False
+DJSTRIPE_WEBHOOK_VALIDATION = 'retrieve_event'
+
+
 # Swagger settings for api docs
 SWAGGER_SETTINGS = {
     "DEFAULT_INFO": f"{ROOT_URLCONF}.api_info",
