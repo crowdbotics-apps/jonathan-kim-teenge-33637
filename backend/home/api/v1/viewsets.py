@@ -11,6 +11,9 @@ from rest_framework.decorators import action
 from stripe.error import CardError
 from django.utils.translation import ugettext_lazy as _
 import sendgrid
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import messaging
 import os
 
 stripe.api_key = settings.STRIPE_LIVE_SECRET_KEY if settings.STRIPE_LIVE_MODE else settings.STRIPE_SECRET_KEY
@@ -26,7 +29,14 @@ from home.api.v1.serializers import (
     SettingSerializer
 )
 from home.models import Alert, Course, Wish, Setting
-from users.models import User
+from users.models import User, Subscription, UserSubscription
+
+
+# def initialize_firebase():
+#     """Function to connect with firebase
+#     """
+#     cred = credentials.Certificate(settings.FIREBASE_SDK)
+#     default_app = firebase_admin.initialize_app(credential=cred)
 
 class SignupViewSet(ModelViewSet):
     serializer_class = SignupSerializer
@@ -94,38 +104,69 @@ class WishViewSet(ModelViewSet):
 
             if course:
                 # send push notification
-                # if notification: then insert
-                Alert.objects.create(user=self.request.user, wish=wish, course=course, is_read=False)
-
-                # SendGrid Integration
-                sg = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
-                data = {
-                    "personalizations": [
-                        {
-                            "to": [
-                                {
-                                    "email": self.request.user.email
-                                }
-                            ],
-                            "subject": "Golf Course Notification"
-                        }
-                    ],
-                    "from": {
-                        "email": settings.EMAIL_HOST_USER
+                response = notification_dic = {
+                    'registration_token': settings.FIREBASE_REGISTRATION_TOKEN,
+                    'data': {
                     },
-                    "content": [
-                        {
-                            "type": "An alert has been added in your application against your wish. Please check your application.",
-                            "value": "and easy to do anywhere, even with Python"
-                        }
-                    ]
+                    'title': "Golf Course",
+                    'message': "An alert has been added in your application against your wish. Please check your application."
                 }
-                response = sg.client.mail.send.post(request_body=data)
-                print(response.status_code)
-                print(response.body)
-                print(response.headers)
+                if response:
+                    Alert.objects.create(user=self.request.user, wish=wish, course=course, is_read=False)
+                    self.send_sendgrid_notification(self.request.user)
+
 
         return resp
+
+
+    def send_sendgrid_notification(user):
+        # SendGrid Integration
+        sg = sendgrid.SendGridAPIClient(api_key=settings.SENDGRID_API_KEY)
+        data = {
+            "personalizations": [
+                {
+                    "to": [
+                        {
+                            "email": user.email
+                        }
+                    ],
+                    "subject": "Golf Course Notification"
+                }
+            ],
+            "from": {
+                "email": settings.EMAIL_HOST_USER
+            },
+            "content": [
+                {
+                    "type": "An alert has been added in your application against your wish. Please check your application.",
+                    "value": "and easy to do anywhere, even with Python"
+                }
+            ]
+        }
+        response = sg.client.mail.send.post(request_body=data)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+
+    def send_notitication(notification_dic):
+        "Function to send a notification to the target device"
+        # This registration token comes from the client FCM SDKs.
+        registration_token = notification_dic[settings.FIREBASE_REGISTRATION_TOKEN]
+        if registration_token is None or registration_token == "":
+            return False
+        # See documentation on defining a message payload.
+        try:
+            message = messaging.Message(
+                data=notification_dic['data'],
+                token=registration_token,
+                notification=messaging.Notification(
+                    title=notification_dic['title'],
+                    body=notification_dic['message'],
+                ),
+            )
+            response = messaging.send(message)
+        except Exception as e:
+            response = None
 
     def get_queryset(self):
         return super().get_queryset().filter(user=self.request.user)
@@ -161,6 +202,9 @@ class PaymentViewSet(ViewSet):
         try:
             user = self.request.user
             email = user.email
+            # get subscription object
+            sub_obj = Subscription.objects.get(pk=request.data['subscription_id'])
+
             payment_method_id = request.data['payment_method_id']
             customer_data = stripe.Customer.list(email=email).data
             # if the array is empty it means the email has not been used yet
@@ -176,19 +220,21 @@ class PaymentViewSet(ViewSet):
                 customer=customer,
                 payment_method=payment_method_id,
                 currency='usd',  # you can provide any currency you want
-                amount=6.98,
+                amount= sub_obj.price,
                 confirm=True
             )
 
             stripe.Subscription.create(
                 customer=customer,
                 items=[{
-                    'price': 'price_1JSoiFGRbb2vDACC2Fa23PAQ'  # here paste your price id
+                    # 'price': 'price_1JSoiFGRbb2vDACC2Fa23PAQ'  # here paste your price id
+                    'price': sub_obj.stripe_price_id
                 }]
             )
             user.is_subscribe = True
             user.subscription_using_payment = True
             user.subscription_using_code = False
+            UserSubscription(user=user, subscription= sub_obj).save()
             user.save()
             return Response(status=status.HTTP_201_CREATED)
         except CardError as e:
@@ -202,7 +248,7 @@ class PaymentViewSet(ViewSet):
         request.user.stripe_customer_id = customer.id
         request.user.save()
 
-    @action(detail=False, methods=['get'])
+    # @action(detail=False, methods=['get'])
     def get_customer_id(self, request):
         if not request.user.stripe_customer_id:
             customer = stripe.Customer.create(
@@ -307,5 +353,11 @@ class PaymentViewSet(ViewSet):
                 return Response(response)
             return Response("User not a customer", status=status.HTTP_400_BAD_REQUEST)
 
-# TODO: save wish-> save wish+ get course+dump course in notification table
-
+    @action(detail=False, methods=['post'])
+    def delete_card(self, request):
+        stripe_customer_id = self.get_customer_id(request)
+        response = stripe.Customer.delete_source(
+            stripe_customer_id,
+            request.data['card_id']
+        )
+        return Response(response)

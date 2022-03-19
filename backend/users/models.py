@@ -61,15 +61,15 @@ class User(AbstractUser):
     def get_absolute_url(self):
         return reverse("users:detail", kwargs={"username": self.username})
 
-    def save(self, *args, **kwargs):
-        # Stripe Account Creation Of Customer
-        if not self.stripe_customer_id:
-            customer = stripe.Customer.create(
-                description="Customer for {}".format(self.email),
-                email=self.email
-            )
-            self.stripe_customer_id = customer.id
-        super(User, self).save()
+    # def save(self, *args, **kwargs):
+    #     # Stripe Account Creation Of Customer
+    #     if not self.stripe_customer_id:
+    #         customer = stripe.Customer.create(
+    #             description="Customer for {}".format(self.email),
+    #             email=self.email
+    #         )
+    #         self.stripe_customer_id = customer.id
+    #     super(User, self).save()
 
     #
     # def save(self, *args, **kwargs):
@@ -85,9 +85,15 @@ class User(AbstractUser):
     #     return self.role == User.ADMIN and not self.parent
 
 class Subscription(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
 
     name = models.CharField(_("Name"), blank=True, null=True, max_length=255)
     price = models.CharField(_("Price"), blank=True, null=True, max_length=255)
     number_of_alerts = models.CharField(_("Number of Alerts"), blank=True, null=True, max_length=255)
     is_active = models.BooleanField(default=False)
+    stripe_price_id = models.CharField(_("Stripe Price Id"), blank=True, null=True, max_length=255)
+
+class UserSubscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None)
+    subscription = models.ForeignKey(Subscription, on_delete=models.CASCADE, default=None)
+
+    stripe_subscription_id = models.CharField(_("Stripe Subscription Id"), blank=True, null=True, max_length=255)

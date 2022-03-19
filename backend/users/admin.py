@@ -48,10 +48,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
     model = Subscription
     search_fields = ["name"]
-    list_display = ['name', 'price', 'number_of_alerts', 'is_active']
+    list_display = ['name', 'price', 'number_of_alerts', 'is_active', 'stripe_price_id']
     list_filter = ('is_active', 'price')
 
     actions = [turn_subscription_on_off]
-
 
 admin.site.register(Subscription, SubscriptionAdmin)

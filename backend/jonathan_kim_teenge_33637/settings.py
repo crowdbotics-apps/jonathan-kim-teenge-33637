@@ -279,6 +279,9 @@ if GS_BUCKET_NAME:
     STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
     GS_DEFAULT_ACL = "publicRead"
 
+
+FIREBASE_REGISTRATION_TOKEN= env.str("FIREBASE_REGISTRATION_TOKEN", "")
+FIREBASE_SDK = env.str("FIREBASE_SDK", "")
 # Provider specific settings
 
 SOCIALACCOUNT_PROVIDERS = {
