@@ -52,6 +52,8 @@ class User(AbstractUser):
     subscription_using_payment = models.BooleanField(default=False)
     subscription_using_code = models.BooleanField(default=False)
 
+    device_id = models.CharField(max_length=250, null=True, blank=True)
+
     is_premium = models.BooleanField(default=False)
     is_flaged = models.BooleanField(default=False)
 

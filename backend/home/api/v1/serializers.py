@@ -81,7 +81,7 @@ class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'name', 'phone_number', 'dob', 'gender', 'address', 'city', 'zip_code', 'state',
-                  'country']
+                  'country', 'device_id']
 
 
 class WishSerializer(serializers.ModelSerializer):
